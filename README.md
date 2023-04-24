@@ -42,4 +42,5 @@ Running Dev:
 ```
 cd src
 flask run
+python3 bot.py
 ```

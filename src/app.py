@@ -26,7 +26,14 @@ def imagine():
 # collect the picture generate and 1. store to database 2. pass to a webhook
 # add protection to api requests so it will work run for authorized call
 # add documentation, prefer Sphinx(auto-gen)
-# 
+
+
+# Helpful Link
+# https://www.thenextleg.io/docs/getting-started
+# https://pythonbasics.org/flask-rest-api/
+# https://github.com/Merubokkusu/Discord-S.C.U.M/tree/master/docs
+# https://discordpy-self.readthedocs.io/en/latest/index.html (not using now, but might helpful)
+#
 
 
 

@@ -6,7 +6,7 @@ We recommend creating a [Python virtual environment](https://docs.python.org/3/t
 for running the API server.
 
 ```
-python -m venv mjapi-env
+python3 -m venv mjapi-env
 ```
 
 For Windows:

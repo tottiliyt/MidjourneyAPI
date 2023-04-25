@@ -2,29 +2,50 @@
 
 from discum.utils.slash import SlashCommander
 import discum
+import json
 
+# To obtain your token, https://discordpy-self.readthedocs.io/en/latest/token.html
 TOKEN= 'NTUyNzI2NTQ2ODIyMDcwMjgy.YdPFng.uUxKSWpVFtSdVfVM-cUkgnogxCk'
 
 bot = discum.Client(token=TOKEN,log=False)
 
+WEBHOOK_BOT_ID = "1099816041737101462"
+MIDJOURNEY_BOT_ID = "936929561302675456"
+IMAGINE_PREFIX = "@IMAGINE"
+
 def imagine(resp):
   if resp.event.message:
-    m = resp.parsed.auto()
-    if m['content'].startswith('request'):
-        channelID = m['channel_id']
-        guildID = m['guild_id']
-        bot.sendMessage(channelID,"got request")
-        slashCmds = bot.getSlashCommands("936929561302675456").json()
-        s = SlashCommander(slashCmds)
-        data = s.get(['imagine'])
-        data['options'] = [{
-            "type": 3,
-            "name": "prompt",
-            "value": "a bottle of water"
-        }]
-        print(data)
-        bot.triggerSlashCommand("936929561302675456", channelID,guildID=guildID, data=data)
-        print('Bumped!')
+    msg = resp.parsed.auto()
+
+    # check owner send message
+    if msg['author']['id'] == WEBHOOK_BOT_ID:
+        content_string = msg['content']
+
+        try:
+            content_json = json.loads(content_string)
+            cmd = content_json["cmd"]
+            prompt = content_json["msg"]
+            webhook = content_json["webhook"]
+        except:
+            # not able to parse request body
+            return
+
+        if cmd == "imagine":
+            channelID = msg['channel_id']
+            guildID = msg['guild_id']
+
+            bot.sendMessage(channelID,f"got request: /imagine {prompt}")
+            slashCmds = bot.getSlashCommands(MIDJOURNEY_BOT_ID).json()
+            slashCmd = SlashCommander(slashCmds)
+            metadata = slashCmd.get(['imagine'])
+
+            # modify slash command metadata 
+            metadata['options'] = [{
+                "type": 3,
+                "name": "prompt",
+                "value": prompt
+            }]
+            bot.triggerSlashCommand(MIDJOURNEY_BOT_ID, channelID,guildID=guildID, data=metadata)
 
 bot.gateway.command({"function": imagine})
 bot.gateway.run(auto_reconnect=True)

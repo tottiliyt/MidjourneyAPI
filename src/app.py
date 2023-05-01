@@ -49,6 +49,7 @@ def refresh():
     # Set the JWT access cookie in the response
     resp = jsonify({'refresh': True})
     set_access_cookies(resp, access_token)
+
     return resp, 200
 
 @app.route('/imagine', methods=['POST'])
@@ -67,7 +68,7 @@ def imagine():
     
     request_body = request.json
 
-    request_body["webhook_id"] = get_jwt_identity()
+    request_body["user_id"] = get_jwt_identity()
 
     metadata = json.dumps(request_body)
     response = requests.post(WEBHOOK_BOT_URL, json={"content": metadata})
@@ -93,7 +94,34 @@ def button():
 
     metadata = json.dumps(request_body)
     response = requests.post(WEBHOOK_BOT_URL, json={"content": metadata})
+
     return {}, 200
+
+@app.route('/result', methods=['GET'])
+@jwt_required()
+@limiter.limit("20/minute")
+def result():
+    request_body = request.json
+    
+    prompt = request_body['prompt']
+    user_id = get_jwt_identity()
+
+    #dynamo get by prompt
+
+
+
+    {
+        "prompt": prompt,
+        "user_id": user_id,
+        "status": ,
+        "detail":
+    }
+
+    return {}, 200
+
+
+
+
 
 # TODO
 

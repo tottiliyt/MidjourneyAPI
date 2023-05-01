@@ -11,12 +11,9 @@ bot = discum.Client(token=TOKEN,log=False)
 
 WEBHOOK_BOT_ID = "1099816041737101462"
 MIDJOURNEY_BOT_ID = "936929561302675456"
-IMAGINE_PREFIX = "@IMAGINE"
 
+# a dictionary that store prompt and user-id
 current_job = {}
-
-TEST_WEBHOOK_URL = "https://webhook.site/4ab0ea73-7086-434d-9797-dd47f87009b2"
-LOCALHOST_WEBHOOK_URL = "http://127.0.0.1:5000/webhook"
 
 def endpoints(resp):
   if resp.event.message or resp.event.message_updated:
@@ -34,7 +31,7 @@ def endpoints(resp):
         if cmd == "imagine":
             try:
                 prompt = content_json["msg"]
-                webhook_id = content_json["webhook_id"]
+                user_id = content_json["user_id"]
             except:
                 # Not able to parse request body
                 return
@@ -60,13 +57,13 @@ def endpoints(resp):
             # add to current job
             if prompt not in current_job:
                 current_job[prompt] = []
-            current_job[prompt].append(webhook_id)
+            current_job[prompt].append(user_id)
 
         elif cmd == "button":
             try:
                 metadata = content_json['metadata']
                 button_name = content_json['button_name']
-                webhook_id = content_json["user_id"]
+                user_id = content_json["user_id"]
                 prompt: content_json['prompt']
 
             except:
@@ -90,16 +87,16 @@ def endpoints(resp):
         prompt = content[content.find(prompt_identifier)+len(prompt_identifier):content.rfind(prompt_identifier)]
         
         print(current_job)
-        # determine which webhook to send
-        webhook_id = current_job[prompt][0]
+        # determine which user_id associate with the prompt
+        user_id = current_job[prompt][0]
 
         # job wait to start
         if len(msg['attachments']) == 0:
             result_metadata = {
                 "msg": msg["content"],
-                "webhook_id": webhook_id
+                "user_id": user_id
             }
-            response = requests.post(LOCALHOST_WEBHOOK_URL, json=result_metadata)
+            # response = requests.post(LOCALHOST_WEBHOOK_URL, json=result_metadata)
         # job started or finished
         elif len(msg['attachments']) == 1:
             
@@ -107,9 +104,9 @@ def endpoints(resp):
             if len(msg['components']) == 0:
                 result_metadata = {
                     "msg": msg["content"],
-                    "webhook_id": webhook_id
+                    "user_id": user_id
                 }
-                response = requests.post(LOCALHOST_WEBHOOK_URL, json=result_metadata)
+                # response = requests.post(LOCALHOST_WEBHOOK_URL, json=result_metadata)
 
             #job finished
             else:
@@ -127,7 +124,7 @@ def endpoints(resp):
                 except:
                     # Not able to parse request body
                     return
-                response = requests.post(LOCALHOST_WEBHOOK_URL, json=result_metadata)
+                # response = requests.post(LOCALHOST_WEBHOOK_URL, json=result_metadata)
 
 bot.gateway.command({"function": endpoints})
 bot.gateway.run(auto_reconnect=True)

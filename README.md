@@ -40,7 +40,5 @@ pip freeze > requirements.txt
 Running Dev:
 
 ```
-cd src
 flask run
-python3 bot.py
 ```

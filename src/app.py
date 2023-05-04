@@ -8,6 +8,9 @@ import requests
 import uuid
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
+from pymongo import MongoClient
+from bson import json_util
+
 
 app = Flask(__name__)
 
@@ -20,6 +23,20 @@ jwt = JWTManager(app)
 
 #Webhook of my channel. Click on edit channel --> Webhooks --> Creates webhook
 WEBHOOK_BOT_URL = "https://discord.com/api/webhooks/1099816041737101462/uI6e4cB4Gvfo4Qye4zZTcVX76eXuRaduREqC2jXPqLjrpaVKXmNW12GX-JJgFTG4JOAY"
+
+def get_database():
+ 
+    # Provide the mongodb atlas url to connect python to mongodb using pymongo
+    CONNECTION_STRING = "mongodb+srv://alan:CVqTP2WEkqnwGmr8@ai-painting.c5uwx70.mongodb.net/test"
+    # create the database and collection to start with
+    client = MongoClient(CONNECTION_STRING)
+    db_client = client['ai_painting']
+    db_job = db_client['job']
+    # db_job.create_index("prompt")
+
+    return db_job
+
+db_job = get_database()
 
 @app.route('/auth', methods=['POST'])
 def auth():
@@ -47,7 +64,7 @@ def refresh():
     access_token = create_access_token(identity=current_user)
 
     # Set the JWT access cookie in the response
-    resp = jsonify({'refresh': True})
+    resp = jsonify({'access_token': access_token})
     set_access_cookies(resp, access_token)
 
     return resp, 200
@@ -105,21 +122,12 @@ def result():
     
     prompt = request_body['prompt']
     user_id = get_jwt_identity()
-
+    print(user_id)
     #dynamo get by prompt
 
-
-
-    {
-        "prompt": prompt,
-        "user_id": user_id,
-        "status": ,
-        "detail":
-    }
-
-    return {}, 200
-
-
+    cursor = db_job.find({"prompt": prompt, "user_id":user_id}, {'_id': False})
+        
+    return {"results": list(cursor)}, 200
 
 
 

@@ -3,6 +3,21 @@ from discum.utils.button import Buttoner
 import discum
 import json
 import requests
+from pymongo import MongoClient
+
+def get_database():
+ 
+    # Provide the mongodb atlas url to connect python to mongodb using pymongo
+    CONNECTION_STRING = "mongodb+srv://alan:CVqTP2WEkqnwGmr8@ai-painting.c5uwx70.mongodb.net/test"
+    # create the database and collection to start with
+    client = MongoClient(CONNECTION_STRING)
+    db_client = client['ai_painting']
+    db_job = db_client['job']
+    # db_job.create_index("prompt")
+
+    return db_job
+
+db_job = get_database()
 
 # To obtain your token, https://discordpy-self.readthedocs.io/en/latest/token.html
 TOKEN= 'NTUyNzI2NTQ2ODIyMDcwMjgy.YdPFng.uUxKSWpVFtSdVfVM-cUkgnogxCk'
@@ -12,7 +27,6 @@ bot = discum.Client(token=TOKEN,log=False)
 WEBHOOK_BOT_ID = "1099816041737101462"
 MIDJOURNEY_BOT_ID = "936929561302675456"
 
-# a dictionary that store prompt and user-id
 current_job = {}
 
 def endpoints(resp):
@@ -45,6 +59,8 @@ def endpoints(resp):
                 # Not able to fetch neccessary info to send the slash command
                 return
 
+            current_job[prompt] = user_id
+            print(current_job)
             # Modify slash command metadata 
             metadata['options'] = [{
                 "type": 3,
@@ -53,11 +69,6 @@ def endpoints(resp):
             }]
 
             bot.triggerSlashCommand(MIDJOURNEY_BOT_ID, channelID,guildID=guildID, data=metadata)
-
-            # add to current job
-            if prompt not in current_job:
-                current_job[prompt] = []
-            current_job[prompt].append(user_id)
 
         elif cmd == "button":
             try:
@@ -86,27 +97,30 @@ def endpoints(resp):
 
         prompt = content[content.find(prompt_identifier)+len(prompt_identifier):content.rfind(prompt_identifier)]
         
-        print(current_job)
-        # determine which user_id associate with the prompt
-        user_id = current_job[prompt][0]
-
         # job wait to start
         if len(msg['attachments']) == 0:
             result_metadata = {
+                "prompt": prompt,
+                "status": "waiting to start",
                 "msg": msg["content"],
-                "user_id": user_id
+                "user_id": current_job[prompt],
+                "timestamp": msg['timestamp']
             }
-            # response = requests.post(LOCALHOST_WEBHOOK_URL, json=result_metadata)
+            db_job.insert_one(result_metadata)
+
         # job started or finished
         elif len(msg['attachments']) == 1:
             
             #job in progress
             if len(msg['components']) == 0:
                 result_metadata = {
+                    "prompt": prompt,
+                    "status": "in progress",
                     "msg": msg["content"],
-                    "user_id": user_id
+                    "user_id": current_job[prompt],
+                    "timestamp": msg['timestamp']
                 }
-                # response = requests.post(LOCALHOST_WEBHOOK_URL, json=result_metadata)
+                db_job.insert_one(result_metadata)
 
             #job finished
             else:
@@ -118,13 +132,15 @@ def endpoints(resp):
                         'flags':msg["flags"],
                         'components':msg['components'],
                         'attachments':msg['attachments'],
-                        'prompt': prompt
+                        'prompt': prompt,
+                        "status": "job finished",
+                        "user_id": current_job[prompt],
+                        "timestamp": msg['timestamp']
                     }
-                
                 except:
                     # Not able to parse request body
                     return
-                # response = requests.post(LOCALHOST_WEBHOOK_URL, json=result_metadata)
+                db_job.insert_one(result_metadata)
 
 bot.gateway.command({"function": endpoints})
 bot.gateway.run(auto_reconnect=True)

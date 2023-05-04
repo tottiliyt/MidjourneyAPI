@@ -144,4 +144,5 @@ def result():
 # https://discordpy-self.readthedocs.io/en/latest/index.html (not using now, but might helpful)
 #
 
-app.run(host='0.0.0.0', port=8080)
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=443, debug=True)  
